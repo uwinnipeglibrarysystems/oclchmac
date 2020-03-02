@@ -27,12 +27,14 @@ GET
 www.oclc.org
 443
 /wskey
-%s
-""" % (apikey, timestamp, nonce,
-       '\n'.join( ("%s=%s" % (key, value)
-                   for key, value in ordered_query_params)
-       ) # join
-) # tuple for string format
+""" % (apikey, timestamp, nonce)
+
+    query_param_string= '\n'.join( ("%s=%s" % (key, value)
+                                    for key, value in ordered_query_params)
+    ) # join
+    if query_param_string!='':
+        query_param_string+="\n"
+    prehashedstring+=query_param_string
         
     digest = hmac.new(secret.encode('utf-8'),
                       msg=prehashedstring.encode('utf-8'),
