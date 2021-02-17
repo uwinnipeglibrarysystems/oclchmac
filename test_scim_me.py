@@ -32,6 +32,10 @@
 #
 # this script will prompt for the client_id, secret and numeric institution
 # registration id
+#
+# invoke with --token followed by a valid, unexpired access token and
+# you'll be just asked for the institution id, demonstrating the tokens
+# are reusable during their lifetime
 
 from collections import OrderedDict
 from sys import argv
