@@ -12,6 +12,7 @@ sysrandom = SystemRandom()
 def oclc_sha256_hmac_sig(
         apikey, secret,
         ordered_query_params,
+        method='GET',
         timestamp=None, nonce=None,
 ):
     if timestamp==None:
@@ -23,11 +24,11 @@ def oclc_sha256_hmac_sig(
 %s
 %s
 
-GET
+%s
 www.oclc.org
 443
 /wskey
-""" % (apikey, timestamp, nonce)
+""" % (apikey, timestamp, nonce, method)
 
     query_param_string= '\n'.join( ("%s=%s" % (key, value)
                                     for key, value in ordered_query_params)
@@ -47,12 +48,14 @@ def oclc_authorization_header_value(
         ordered_query_params,
         principalID=None,
         principalIDNS=None,
+        method='GET',
         timestamp=None, nonce=None,
 ):
     timestamp, nonce, signature = oclc_sha256_hmac_sig(
         apikey, secret,
         ordered_query_params,
-        timestamp=timestamp, nonce=nonce
+        method=method,
+        timestamp=timestamp, nonce=nonce,
     )
 
     principalID_str = (None if principalID==None
