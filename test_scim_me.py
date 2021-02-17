@@ -34,6 +34,7 @@
 # registration id
 
 from collections import OrderedDict
+from sys import argv
 
 from requests import HTTPError
 
@@ -46,36 +47,34 @@ from oclcwskeyhmacsig.util import (
 
 TOKEN_REQUEST_URL = 'https://authn.sd00.worldcat.org/oauth2/accessToken'
 
-authorization_code = input("auth code> ").strip()
+def request_access_token_with_auth_code(
+        authorization_code,
+        institution,
+        client_key,
+        secret):
 
-institution = str(int(input("institution id> ").strip()))
-client_key = input("client_id> ").strip()
-secret = input("secret> ").strip()
+    url, auth_header = make_url_and_auth_header(
+        client_key, secret,
+        TOKEN_REQUEST_URL,
+        list(sorted(OrderedDict(
+            authenticatingInstitutionId=institution,
+            code=authorization_code,
+            contextInstitutionId=institution,
+            grant_type='authorization_code',
+            ).items())),
+        method='POST',
+    )
 
-url, auth_header = make_url_and_auth_header(
-    client_key, secret,
-    TOKEN_REQUEST_URL,
-    list(sorted(OrderedDict(
-        authenticatingInstitutionId=institution,
-        code=authorization_code,
-        contextInstitutionId=institution,
-        grant_type='authorization_code',
-        ).items())),
-    method='POST',
-)
+    try :
+        return post_empty_body_and_recieve_json_from_oclc_url(
+                url, auth_header
+            )
+    except HTTPError as e:
+        print( repr(e) )
+        print( e.args )
+        raise e
 
-try :
-    json_response =  post_empty_body_and_recieve_json_from_oclc_url(
-            url, auth_header,
-        )
-except HTTPError as e:
-    print( repr(e) )
-    print( e.args )
-    raise e
-
-if 'access_token' in json_response:
-    access_token = json_response['access_token']
-    print(access_token)
+def get_slash_Me_with_access_token(access_token, institution):
     try:
         me_response = get_json_from_oclc_url(
             'https://%s.share.worldcat.org/idaas/scim/v2/Me' % institution,
@@ -85,7 +84,34 @@ if 'access_token' in json_response:
     except HTTPError as e:
         print( repr(e) )
         print( e.args )
+        raise e
     else:
-        print(me_response)
-else:
-    print('no access token in response to request for token')
+        return me_response
+
+def main():
+    institution = str(int(input("institution id> ").strip()))
+
+    # too lazy to use an argparse library when this simple
+    if len(argv) == 3 and argv[1] == "--token":
+        access_token = argv[2]
+    else:
+        authorization_code = input("auth code> ").strip()
+        client_key = input("client_id> ").strip()
+        secret = input("secret> ").strip()
+        json_response = request_access_token_with_auth_code(
+            authorization_code,
+            institution,
+            client_key,
+            secret)
+
+        if 'access_token' in json_response:
+            access_token = json_response['access_token']
+            print("access token " + access_token)
+        else:
+            print('no access token in response to request for token')
+            exit(1)
+
+    print( get_slash_Me_with_access_token(access_token, institution) )
+
+if __name__ == "__main__":
+    main()
